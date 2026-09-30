@@ -1,0 +1,39 @@
+{
+  "name": "antigravity-scroll-unpin",
+  "version": "1.0.0",
+  "description": "Zero-corruption patcher to unpin sticky user prompt headers in Google Antigravity and Antigravity IDE",
+  "main": "src/index.js",
+  "bin": {
+    "antigravity-unpin": "bin/cli.js"
+  },
+  "scripts": {
+    "start": "node bin/cli.js",
+    "patch": "node bin/cli.js --apply",
+    "restore": "node bin/cli.js --restore",
+    "status": "node bin/cli.js --status"
+  },
+  "keywords": [
+    "antigravity",
+    "antigravity-ide",
+    "gemini",
+    "gemini-code-assist",
+    "vscode",
+    "ui-tweak",
+    "sticky-scroll",
+    "patcher",
+    "electron"
+  ],
+  "author": "albert392392",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/albert392392/antigravity-scroll-unpin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/albert392392/antigravity-scroll-unpin/issues"
+  },
+  "homepage": "https://github.com/albert392392/antigravity-scroll-unpin#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
