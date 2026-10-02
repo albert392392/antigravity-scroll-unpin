@@ -12,3 +12,4 @@ dist/
 .idea/
 antigravity-watcher-silent.vbs
 scratch_*
+.vs/

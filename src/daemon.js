@@ -9,10 +9,21 @@ const { clearV8Cache } = require('./cache');
 const TASK_NAME = 'AntigravityScrollUnpinWatcher';
 const os = require('os');
 const LOG_FILE = path.join(os.homedir(), '.antigravity-scroll-unpin.log');
+const MAX_LOG_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB storage retention boundary
 
 function logEvent(msg) {
   const line = `[${new Date().toISOString()}] ${msg}\n`;
   try {
+    if (fs.existsSync(LOG_FILE)) {
+      const stats = fs.statSync(LOG_FILE);
+      if (stats.size >= MAX_LOG_SIZE_BYTES) {
+        const backupLog = `${LOG_FILE}.1`;
+        if (fs.existsSync(backupLog)) {
+          fs.unlinkSync(backupLog);
+        }
+        fs.renameSync(LOG_FILE, backupLog);
+      }
+    }
     fs.appendFileSync(LOG_FILE, line, 'utf8');
   } catch (_) {}
   console.log(msg);

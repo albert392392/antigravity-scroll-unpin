@@ -10,7 +10,8 @@
     "start": "node bin/cli.js",
     "patch": "node bin/cli.js --apply",
     "restore": "node bin/cli.js --restore",
-    "status": "node bin/cli.js --status"
+    "status": "node bin/cli.js --status",
+    "test": "node test/verify.test.js"
   },
   "keywords": [
     "antigravity",

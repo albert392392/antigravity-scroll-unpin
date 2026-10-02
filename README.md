@@ -30,7 +30,7 @@ In **Google Antigravity** and **Antigravity IDE**, the user prompt card in the A
 ## ✨ Features (Triple-Layer Architecture)
 
 - 🔓 **Universal Unpinning**: Prompts scroll naturally out of view when scrolling down, freeing 100% of your conversation viewport.
-- 👁️ **Dynamic MutationObserver**: Injected at the master `preload.js` level. Immediately captures newly mounted "New Chat" panels, switched tabs, and cascade renders, stripping sticky classes in real-time.
+- ⚡ **CSS-only Preload Injection**: `webFrame.insertCSS()` applies the unpin rules without observing or rescanning the chat DOM; CSS automatically covers newly rendered chats.
 - 🛡️ **Zero-Corruption Guarantee**: Automatically recalculates and updates cryptographic SHA-256 base64 checksums in `product.json`—**zero corruption warnings**.
 - ⚡ **Self-Healing Auto-Update Daemon**: Monitors installation directories with native file-system watchers. When Google updates Antigravity, the daemon automatically re-applies the patch and re-signs checksums in <2 seconds.
 - 🔄 **Supports Both Flavors**:
@@ -124,14 +124,14 @@ node bin/cli.js --restore
 | ❌ Huge prompt box stays pinned to the top | ✅ Prompt scrolls away naturally |
 | ❌ Terminal output & code diffs hidden behind prompt | ✅ Full viewport available for agent responses |
 | ❌ Updates revert changes | ✅ Self-healing daemon re-patches on update in <2s |
-| ❌ "New Chat" re-locks sticky headers | ✅ Dynamic MutationObserver keeps new chats unpinned |
+| ❌ "New Chat" re-locks sticky headers | ✅ CSS selectors keep new chats unpinned without DOM observers |
 | ❌ Manual edits trigger `"Installation Corrupt"` warning | ✅ 100% cryptographically re-signed `product.json` |
 
 ---
 
 ## 🛠️ Technical Architecture
 
-1. **Master Preload MutationObserver (`preload.js`)**: Executes before any page loads in Electron. Invokes `webFrame.insertCSS()` across all frames and mounts a persistent `MutationObserver` on `document.documentElement` to strip `.sticky` and `.top-0` from any newly rendered chat node.
+1. **Preload CSS Injection (`preload.js`)**: Invokes `webFrame.insertCSS()` at startup. Browser CSS selectors apply to existing and newly rendered chat nodes without a persistent DOM observer.
 2. **Multi-File CSS & JSX Neutralization**: Injects universal `!important` unpin rules into `workbench-jetski-agent.html`, `workbench.html`, `jetskiMain.tailwind.css`, `jetskiAgent/main.css`, and `tw-base.tailwind.css`.
 3. **Cryptographic Re-Signing**: Re-computes SHA-256 base64 digests for all modified core VS Code files and writes them to `product.json`:
    $$\text{Digest} = \text{Base64}(\text{SHA-256}(\text{FileBytes})).\text{replace}(/=+$/, '')$$
@@ -151,7 +151,7 @@ Read the full technical specification in [docs/ARCHITECTURE.md](docs/ARCHITECTUR
 
 ### راه‌حل سه‌لایه این ابزار چیست؟
 1. **آن‌پین ۱۰۰٪ و بدون اخطار:** حذف حالت چسبنده از تمامی صفحات و امضای دیجیتال مجدد جدول `product.json` با هش‌های معتبر SHA-256.
-2. **رصدگر داینامیک زمان اجرا (MutationObserver):** تزریق در هسته `preload.js` که هر چت جدید یا تب جدیدی باز شود، در همان میلی‌ثانیه‌ی اول آن را آن‌پین نگه می‌دارد.
+2. **تزریق سبک CSS در زمان اجرا:** قانون‌های CSS در `preload.js` با هر رندر جدید خودکار اعمال می‌شوند و دیگر کل DOM چت را رصد یا اسکن نمی‌کنند.
 3. **سرویس پس‌زمینه خودترمیم‌شونده (Self-Healing Daemon):** مانیتورینگ پوشه‌های برنامه در پس‌زمینه که به محض دانلود آپدیت جدید توسط گوگل، ظرف ۲ ثانیه پچ را اتوماتیک و بدون دخالت دست مجدداً اعمال می‌کند.
 
 برای نصب سرویس خودترمیم‌شونده در پس‌زمینه ویندوز:

@@ -52,11 +52,11 @@ Google ships Antigravity in two distinct application wrappers:
 │   • Suppression of ::after gradient shadow                      │
 │   • Injected into all 5 HTML/CSS files + JSX string             │
 ├─────────────────────────────────────────────────────────────────┤
-│ Layer 2: Master Preload Dynamic MutationObserver                │
+│ Layer 2: CSS-only Preload Injection                             │
 │   • Injected into sandbox preload.js (runs before any window)   │
 │   • Native webFrame.insertCSS() at Chromium engine level        │
-│   • Continuous MutationObserver intercepts "New Chat" & tabs   │
-│   • Strips sticky classes and locks inline relative styles      │
+│   • CSS selectors also match newly rendered chats               │
+│   • No persistent observer or repeated subtree scans            │
 ├─────────────────────────────────────────────────────────────────┤
 │ Layer 3: Self-Healing Auto-Update Daemon                        │
 │   • Native fs.watch on resources/ across both apps              │

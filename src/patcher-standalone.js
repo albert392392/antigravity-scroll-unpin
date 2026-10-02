@@ -4,7 +4,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const STANDALONE_PRELOAD_INJECTION = `
-// --- [antigravity-scroll-unpin] Universal Preload Hook ---
+// --- [antigravity-scroll-unpin] CSS-only Preload Hook ---
 (function() {
   try {
     const unpinCss = \`
@@ -36,73 +36,25 @@ const STANDALONE_PRELOAD_INJECTION = `
         if (webFrame && webFrame.insertCSS) webFrame.insertCSS(unpinCss);
       } catch (_) {}
     }
-
-    // 2. DOM-level style injection & continuous MutationObserver for SPA / New Chat
-    const setupUnpinObserver = () => {
-      if (typeof document === 'undefined' || !document.documentElement) return;
-
-      if (!document.getElementById('antigravity-scroll-unpin-style')) {
-        const style = document.createElement('style');
-        style.id = 'antigravity-scroll-unpin-style';
-        style.textContent = unpinCss;
-        (document.head || document.documentElement).appendChild(style);
-      }
-
-      const applyUnpinToNode = (el) => {
-        if (!el || el.nodeType !== 1) return;
-        if (el.getAttribute && el.getAttribute('aria-label') === 'User message') {
-          el.style.setProperty('position', 'relative', 'important');
-          el.style.setProperty('top', 'auto', 'important');
-          el.classList.remove('sticky', 'top-0');
-        }
-        const matches = el.querySelectorAll ? el.querySelectorAll('[aria-label="User message"], div[role="article"][aria-label="User message"]') : [];
-        for (let i = 0; i < matches.length; i++) {
-          const m = matches[i];
-          m.style.setProperty('position', 'relative', 'important');
-          m.style.setProperty('top', 'auto', 'important');
-          m.classList.remove('sticky', 'top-0');
-        }
-      };
-
-      // Run on existing elements
-      applyUnpinToNode(document.body || document.documentElement);
-
-      // Continuous observer across SPA renders, tabs, new chats
-      if (!window.__antigravityUnpinObserver && typeof MutationObserver !== 'undefined') {
-        const observer = new MutationObserver((mutations) => {
-          for (let i = 0; i < mutations.length; i++) {
-            const m = mutations[i];
-            if (m.type === 'childList') {
-              for (let j = 0; j < m.addedNodes.length; j++) {
-                applyUnpinToNode(m.addedNodes[j]);
-              }
-            } else if (m.type === 'attributes' && m.target) {
-              applyUnpinToNode(m.target);
-            }
-          }
-        });
-        observer.observe(document.documentElement, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['class', 'aria-label']
-        });
-        window.__antigravityUnpinObserver = observer;
-      }
-    };
-
-    if (typeof document !== 'undefined') {
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupUnpinObserver);
-      } else {
-        setupUnpinObserver();
-      }
-    }
   } catch (e) {
     console.error('[antigravity-scroll-unpin] Preload hook error:', e);
   }
 })();
 `;
+
+function upsertPreloadHook(content, injection, legacyMarker) {
+  const marker = injection.trimStart().split('\n', 1)[0];
+  const markerIndex = content.indexOf(marker) !== -1
+    ? content.indexOf(marker)
+    : content.indexOf(legacyMarker);
+  if (markerIndex === -1) return `${content}\n${injection.trim()}`;
+
+  const closing = '\n})();';
+  const closingIndex = content.indexOf(closing, markerIndex);
+  if (closingIndex === -1) throw new Error('Existing unpin preload hook is incomplete.');
+
+  return content.slice(0, markerIndex) + injection.trim() + content.slice(closingIndex + closing.length);
+}
 
 /**
  * Patches the standalone Antigravity Electron application's app.asar.
@@ -145,10 +97,14 @@ function patchStandalone(standalonePath) {
     }
 
     let preloadContent = fs.readFileSync(preloadPath, 'utf8');
-    if (!preloadContent.includes('[antigravity-scroll-unpin]')) {
-      preloadContent += '\n' + STANDALONE_PRELOAD_INJECTION;
-      fs.writeFileSync(preloadPath, preloadContent, 'utf8');
-      actions.push('Injected universal MutationObserver & unpin styles into dist/preload.js');
+    const updatedPreloadContent = upsertPreloadHook(
+      preloadContent,
+      STANDALONE_PRELOAD_INJECTION,
+      '// --- [antigravity-scroll-unpin] Universal Preload Hook ---'
+    );
+    if (updatedPreloadContent !== preloadContent) {
+      fs.writeFileSync(preloadPath, updatedPreloadContent, 'utf8');
+      actions.push('Added or updated CSS-only unpin hook in dist/preload.js');
     }
 
     // 4. Pack back to temporary asar
@@ -218,4 +174,5 @@ module.exports = {
   patchStandalone,
   restoreStandalone,
   STANDALONE_PRELOAD_INJECTION,
+  upsertPreloadHook,
 };
