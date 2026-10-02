@@ -1,9 +1,10 @@
 {
   "name": "antigravity-scroll-unpin",
-  "version": "1.0.0",
-  "description": "Zero-corruption patcher to unpin sticky user prompt headers in Google Antigravity and Antigravity IDE",
+  "version": "1.1.0",
+  "description": "Zero-corruption, self-healing patcher to unpin sticky user prompt headers in Google Antigravity and Antigravity IDE",
   "main": "src/index.js",
   "bin": {
+    "antigravity-scroll-unpin": "bin/cli.js",
     "antigravity-unpin": "bin/cli.js"
   },
   "scripts": {

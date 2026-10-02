@@ -4,12 +4,14 @@
 
 **Zero-corruption, self-healing patcher to permanently unpin sticky user prompt headers in Google Antigravity & Antigravity IDE across all updates and new chats.**
 
+[![CI - Defensive Architecture](https://github.com/albert392392/antigravity-scroll-unpin/actions/workflows/ci.yml/badge.svg)](https://github.com/albert392392/antigravity-scroll-unpin/actions/workflows/ci.yml)
+[![Release: v1.1.0](https://img.shields.io/badge/Release-v1.1.0-blue.svg)](https://github.com/albert392392/antigravity-scroll-unpin/releases)
+[![Tests: Passing](https://img.shields.io/badge/Tests-Passing%20(5%2F5)-success.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](#)
 [![Node: >=16](https://img.shields.io/badge/Node-%3E%3D16-informational.svg)](#)
-[![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-success.svg)](#)
 
-[English](#features) • [فارسی](#راهنمای-فارسی) • [Technical Architecture](docs/ARCHITECTURE.md) • [Resume Highlights](docs/RESUME_HIGHLIGHT.md)
+[Quick Start](#-quick-start) • [English](#features) • [فارسی](#-راهنمای-فارسی) • [Technical Architecture](docs/ARCHITECTURE.md) • [Defensive Specification](docs/UNIVERSAL_DEFENSIVE_ARCHITECTURE_SPEC.md)
 
 </div>
 
@@ -27,32 +29,55 @@ In **Google Antigravity** and **Antigravity IDE**, the user prompt card in the A
 
 ---
 
-## ✨ Features (Triple-Layer Architecture)
+## ✨ Features (Defensive Architecture)
 
 - 🔓 **Universal Unpinning**: Prompts scroll naturally out of view when scrolling down, freeing 100% of your conversation viewport.
-- ⚡ **CSS-only Preload Injection**: `webFrame.insertCSS()` applies the unpin rules without observing or rescanning the chat DOM; CSS automatically covers newly rendered chats.
+- ⚡ **Zero-Mutation Preload CSS**: Native Chromium `webFrame.insertCSS()` registered in sandbox preload. Zero CPU spikes, zero DOM thrashing, zero memory leaks.
 - 🛡️ **Zero-Corruption Guarantee**: Automatically recalculates and updates cryptographic SHA-256 base64 checksums in `product.json`—**zero corruption warnings**.
 - ⚡ **Self-Healing Auto-Update Daemon**: Monitors installation directories with native file-system watchers. When Google updates Antigravity, the daemon automatically re-applies the patch and re-signs checksums in <2 seconds.
 - 🔄 **Supports Both Flavors**:
   - **Antigravity Standalone** (`app.asar` Electron extraction & preload hook)
   - **Antigravity IDE** (VS Code Webview CSS, AST rewrite & checksum re-signing)
 - 💾 **100% Reversible**: Automatically creates `.bak` backups before modifying any file. Restore original stock files with a single flag (`--restore`).
-- 🧹 **V8 Cache Invalidation**: Flushes stale bytecode cache (`Code Cache/js` and `CachedData`) so changes reflect immediately.
+- 🧹 **V8 Cache Invalidation**: Flushes stale bytecode cache (`Code Cache/js`, `CachedData`, `GPUCache`) so changes reflect immediately.
+- 📦 **Bounded Storage Retention**: Daemon logging is bounded by a strict 5 MB rotation policy (`.1`), preventing disk bloat.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Apply Patch (1-Click)
+### Option A: Zero-Install (Run instantly via npx)
 
-Using Node CLI:
+No cloning or manual installation needed. Run directly in your terminal:
+
 ```bash
-node bin/cli.js --apply
+# Apply patch immediately
+npx --yes github:albert392392/antigravity-scroll-unpin --apply
+
+# Or install silent Windows self-healing service (survives all auto-updates)
+npx --yes github:albert392392/antigravity-scroll-unpin --install-service
 ```
 
-Or using native PowerShell:
+### Option B: 1-Click PowerShell (Windows)
+
+Open PowerShell and paste this one-liner:
+
 ```powershell
-.\scripts\patch.ps1 -Apply
+irm https://raw.githubusercontent.com/albert392392/antigravity-scroll-unpin/master/scripts/install.ps1 | iex
+```
+
+### Option C: Clone & Run Locally
+
+```bash
+git clone https://github.com/albert392392/antigravity-scroll-unpin.git
+cd antigravity-scroll-unpin
+
+# Apply patch
+node bin/cli.js --apply
+
+# Check integrity status
+node bin/cli.js --status
+```
 ```
 
 ---
@@ -154,8 +179,25 @@ Read the full technical specification in [docs/ARCHITECTURE.md](docs/ARCHITECTUR
 2. **تزریق سبک CSS در زمان اجرا:** قانون‌های CSS در `preload.js` با هر رندر جدید خودکار اعمال می‌شوند و دیگر کل DOM چت را رصد یا اسکن نمی‌کنند.
 3. **سرویس پس‌زمینه خودترمیم‌شونده (Self-Healing Daemon):** مانیتورینگ پوشه‌های برنامه در پس‌زمینه که به محض دانلود آپدیت جدید توسط گوگل، ظرف ۲ ثانیه پچ را اتوماتیک و بدون دخالت دست مجدداً اعمال می‌کند.
 
-برای نصب سرویس خودترمیم‌شونده در پس‌زمینه ویندوز:
+### راه‌اندازی سریع و ۱ کلیکه:
+
+**روش اول (سریع‌ترین - بدون نیاز به دانلود پروژه با npx):**
+```bash
+# اعمال فوری پچ
+npx --yes github:albert392392/antigravity-scroll-unpin --apply
+
+# نصب سرویس خودترمیم در پس‌زمینه ویندوز (مقاوم در برابر آپدیت‌های آتی)
+npx --yes github:albert392392/antigravity-scroll-unpin --install-service
+```
+
+**روش دوم (پاورشل تک‌خطی ویندوز):**
 ```powershell
+irm https://raw.githubusercontent.com/albert392392/antigravity-scroll-unpin/master/scripts/install.ps1 | iex
+```
+
+**روش سوم (اجرای محلی):**
+```powershell
+.\scripts\patch.ps1 -Apply
 .\scripts\patch.ps1 -InstallService
 ```
 
