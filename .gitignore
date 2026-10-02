@@ -10,3 +10,5 @@ temp/
 dist/
 .vscode/
 .idea/
+antigravity-watcher-silent.vbs
+scratch_*

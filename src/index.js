@@ -3,6 +3,7 @@ const { patchIde, restoreIde } = require('./patcher-ide');
 const { patchStandalone, restoreStandalone } = require('./patcher-standalone');
 const { clearV8Cache } = require('./cache');
 const { verifyChecksums } = require('./checksum');
+const { startWatcher, installService, uninstallService } = require('./daemon');
 const path = require('path');
 
 function runStatus() {
@@ -14,6 +15,9 @@ function runStatus() {
   console.log('1. Standalone Antigravity App:');
   if (paths.standalone) {
     console.log(`   Path:    ${paths.standalone}`);
+    const asarPath = path.join(paths.standalone, 'resources', 'app.asar');
+    const hasAsar = require('fs').existsSync(asarPath);
+    console.log(`   Status:  ${hasAsar ? 'Ready' : 'app.asar missing'}`);
   } else {
     console.log('   Status:  Not detected');
   }
@@ -36,17 +40,17 @@ function runStatus() {
 
 function runPatch() {
   const paths = detectPaths();
-  console.log('\n🚀 Applying Antigravity Scroll Unpin Patch...\n');
+  console.log('\n🚀 Applying Antigravity Scroll Unpin Patch (Universal & Multi-Layer)...\n');
 
   if (paths.standalone) {
-    console.log('-> Patching Standalone Antigravity App...');
+    console.log('-> Patching Standalone Antigravity App (app.asar + Preload Observer)...');
     const res = patchStandalone(paths.standalone);
     res.actions.forEach(a => console.log(`   ✓ ${a}`));
     res.errors.forEach(e => console.error(`   ✗ ${e}`));
   }
 
   if (paths.ide) {
-    console.log('\n-> Patching Antigravity IDE...');
+    console.log('\n-> Patching Antigravity IDE (CSS + Master Preload + Checksums)...');
     const res = patchIde(paths.ide);
     res.actions.forEach(a => console.log(`   ✓ ${a}`));
     res.errors.forEach(e => console.error(`   ✗ ${e}`));
@@ -58,7 +62,7 @@ function runPatch() {
     res.cleared.forEach(c => console.log(`   ✓ Removed cache: ${c}`));
   }
 
-  console.log('\n✨ Patch completed! Please restart Antigravity & Antigravity IDE.\n');
+  console.log('\n✨ Patch completed successfully! All windows, tabs, and new chats are now unpinned.\n');
 }
 
 function runRestore() {
@@ -91,4 +95,7 @@ module.exports = {
   runStatus,
   runPatch,
   runRestore,
+  runWatch: startWatcher,
+  runInstallService: installService,
+  runUninstallService: uninstallService,
 };

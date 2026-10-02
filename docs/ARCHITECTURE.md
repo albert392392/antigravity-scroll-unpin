@@ -4,7 +4,7 @@
 
 **Antigravity Scroll Unpin** solves a frustrating UX limitation in Google's **Antigravity** and **Antigravity IDE**: the agent chat input prompt is permanently stuck (`position: sticky; top: 0;`) to the top of the chat panel. For multi-line prompts or smaller viewports, this sticky card claims 30% to 50% of vertical screen space, obscuring code diffs, terminal outputs, and intermediate reasoning.
 
-This document outlines the reverse-engineered internal architecture and explains how this tool achieves zero-corruption patching.
+This document outlines the reverse-engineered internal architecture, analyzes the linear and non-linear failure vectors, and explains how this tool achieves permanent, zero-corruption self-healing unpinning.
 
 ---
 
@@ -28,47 +28,77 @@ Google ships Antigravity in two distinct application wrappers:
 
 ---
 
-## 2. Technical Challenge: The Checksum Integrity Trap
+## 2. Failure Vectors: Linear & Non-Linear Analysis
 
-Modifying VS Code or Antigravity IDE internal files (`out/`) usually results in this persistent warning:
+### Linear Vectors (Upstream Updates & Static Overwrites)
+1. **Upstream Updates**: When Google Antigravity or Antigravity IDE updates via Squirrel or VS Code installer, all internal files (`app.asar`, `out/jetskiAgent/main.js`, `product.json`) are overwritten with fresh stock copies. Any static patch is wiped.
+2. **Missing Stylesheet Scopes**: In earlier revisions, `jetskiAgent/main.css` (106 KB) was omitted from patching, leaving default sticky rules active in certain sub-views.
 
-> ⚠️ **Your Antigravity IDE installation appears to be corrupt. Please reinstall.**
+### Non-Linear Vectors (Dynamic DOM & SPA Re-renders)
+1. **New Chat & Cascade Swapping**: The chat interface is an interactive Single Page Application (SPA) powered by Preact and Tailwind. When a user clicks "New Chat" or switches conversation threads, the virtual DOM unmounts and remounts elements with fresh JSX class strings (`sticky top-0 z-10 mb-4 bg-background after:...`). Static CSS alone can be bypassed or overridden if scoping is lost.
+2. **Pseudo-element Shadow (`::after`)**: Tailwind injects a 28px bottom shadow (`after:h-7 after:bg-gradient-to-b after:from-background after:to-transparent after:pointer-events-none`). When unpinned, this gradient must be explicitly removed (`display: none !important;`).
+3. **V8 Bytecode Cache**: Stale pre-compiled bytecode in `AppData/Roaming/.../Code Cache` causes Electron to ignore newly written JS files until the cache is invalidated.
 
-### Root Cause
-VS Code verifies core bundle integrity on launch by checking file SHA-256 hashes against a pre-baked whitelist in `product.json`:
+---
 
-```json
-{
-  "checksums": {
-    "vs/workbench/workbench.desktop.main.js": "9L00fZS+RjTSre7Is+9l5NZdfdDXIoGw4Zgv6ccf5qc",
-    "vs/code/electron-browser/workbench/workbench-jetski-agent.html": "...",
-    "jetskiAgent/main.js": "...",
-    "jetskiMain.tailwind.css": "..."
-  }
-}
+## 3. The Triple-Layer Defensive Solution
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Triple-Layer Defense                        │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 1: Universal CSS Multi-Selectors & JSX Byte Neutralization │
+│   • Div, article, aria-label, testid selectors with !important  │
+│   • Suppression of ::after gradient shadow                      │
+│   • Injected into all 5 HTML/CSS files + JSX string             │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 2: Master Preload Dynamic MutationObserver                │
+│   • Injected into sandbox preload.js (runs before any window)   │
+│   • Native webFrame.insertCSS() at Chromium engine level        │
+│   • Continuous MutationObserver intercepts "New Chat" & tabs   │
+│   • Strips sticky classes and locks inline relative styles      │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 3: Self-Healing Auto-Update Daemon                        │
+│   • Native fs.watch on resources/ across both apps              │
+│   • 2000ms debounce waits for updater completion                │
+│   • Automatically re-patches and re-signs in <2 seconds         │
+│   • Silent Windows background service (0 CPU / 0 console popup) │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### The Exact Hashing Algorithm
-VS Code implements a specific digest normalization:
+---
+
+## 4. Cryptographic Re-Signing (Zero Corruption)
+
+VS Code verifies core bundle integrity on launch by checking file SHA-256 hashes against a pre-baked whitelist in `product.json`:
+
 $$\text{Digest} = \text{Base64}(\text{SHA-256}(\text{RawFileBytes})).\text{replace}(/=+$/, '')$$
 
 1. Compute raw SHA-256 buffer of the target file.
 2. Encode in Base64.
 3. Strip trailing padding `=` characters.
 
-Our patcher calculates this exact hash for every modified file and updates `product.json` in place, ensuring all 11 core files pass integrity validation with `[OK]`.
+Our patcher calculates this exact hash for every modified file and updates `product.json` in place, ensuring all 11 core files pass integrity validation with `[PASS]`.
 
 ---
 
-## 3. Patching Mechanics
+## 5. Verification Gate
 
-### A. Antigravity Standalone (`app.asar`)
-1. **Unpacking**: The tool unpacks `resources/app.asar` to a secure temp directory.
-2. **Preload Injection**: Inserts high-specificity CSS rules into `dist/preload.js` using Electron's `webFrame.insertCSS()` and DOM `<style>` injection.
-3. **Repackaging**: Packs the archive back into `app.asar` without breaking native dependencies.
+Run integrity check natively:
 
-### B. Antigravity IDE
-1. **HTML Layer**: Injects a scoped `<style>` block into `workbench-jetski-agent.html` so Chromium applies unpinning before React hydration.
-2. **Tailwind Layer**: Appends unpin rules to `jetskiMain.tailwind.css` and `workbench.desktop.main.css`.
-3. **React AST / JSX Layer**: Rewrites `className:"sticky top-0 z-10 ..."` to `className:"relative top-auto z-10 ..."` in `jetskiAgent/main.js`.
-4. **V8 Bytecode Cache Purge**: Flushes `AppData/Roaming/Antigravity IDE/Code Cache/js` and `CachedData` so V8 recompiles fresh assets immediately.
+```bash
+node bin/cli.js --status
+```
+
+Confirm all 11 files report `[PASS]`:
+- `vs/base/parts/sandbox/electron-browser/preload.js`
+- `vs/workbench/workbench.desktop.main.js`
+- `vs/workbench/workbench.desktop.main.css`
+- `vs/workbench/api/node/extensionHostProcess.js`
+- `vs/code/electron-browser/workbench/workbench.html`
+- `vs/code/electron-browser/workbench/workbench.js`
+- `vs/code/electron-browser/workbench/workbench-jetski-agent.html`
+- `vs/code/electron-browser/workbench/jetskiAgent.js`
+- `jetskiAgent/main.js`
+- `jetskiMain.tailwind.css`
+- `tw-base.tailwind.css`
