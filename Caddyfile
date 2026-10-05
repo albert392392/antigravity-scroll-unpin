@@ -1,63 +1,40 @@
 {
-        servers {
-                timeouts {
-                        read_header 10s
-                        read_body 20s
-                        write 60s
-                        idle 2m
-                }
+    email albert392392@gmail.com
+    servers {
+        timeouts {
+            read_header 10s
+            read_body 20s
+            write 60s
+            idle 2m
         }
+    }
 }
 
-zohobooks-manadishan.87.107.160.38.nip.io, zohobooks-manadishan.87-107-160-38.sslip.io, zohobooks.87.107.160.38.nip.io, zohobooks-erp.87.107.160.38.nip.io {
-        encode gzip
-        header {
-                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-                X-Content-Type-Options "nosniff"
-                X-Frame-Options "SAMEORIGIN"
-                Referrer-Policy "strict-origin-when-cross-origin"
-                -Server
-        }
+zohobooks-manadishan.87-107-160-38.sslip.io, zohobooks.87-107-160-38.sslip.io {
+    encode gzip
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
 
-        handle /api/* {
-                reverse_proxy 127.0.0.1:5000
-        }
+    handle /api/* {
+        reverse_proxy 127.0.0.1:5000
+    }
 
-        handle {
-                reverse_proxy 127.0.0.1:3000
-        }
+    handle {
+        reverse_proxy 127.0.0.1:3000
+    }
 }
 
-hos.darookhune.com {
-        encode gzip
-        header {
-                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-                X-Content-Type-Options "nosniff"
-                X-Frame-Options "SAMEORIGIN"
-                Referrer-Policy "strict-origin-when-cross-origin"
-                -Server
-        }
+:80 {
+    handle /api/* {
+        reverse_proxy 127.0.0.1:5000
+    }
 
-        handle /bridge/* {
-                reverse_proxy 127.0.0.1:8765
-        }
-
-        handle /api/* {
-                reverse_proxy 127.0.0.1:5000
-        }
-
-        handle {
-                reverse_proxy 127.0.0.1:3000
-        }
-}
-
-https://87.107.160.38 {
-        tls internal
-        encode gzip
-        handle /api/* {
-                reverse_proxy 127.0.0.1:5000
-        }
-        handle {
-                reverse_proxy 127.0.0.1:3000
-        }
+    handle {
+        reverse_proxy 127.0.0.1:3000
+    }
 }
