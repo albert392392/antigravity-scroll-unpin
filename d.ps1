@@ -47,7 +47,14 @@ try {
     $feDir = "C:\inetpub\zohobooks\frontend"
     New-Item -ItemType Directory -Path $feDir -Force -ErrorAction SilentlyContinue | Out-Null
     
-    curl.exe -sL -o $destZip "https://github.com/albert392392/antigravity-scroll-unpin/releases/download/v2.0.0/frontend_standalone.zip"
+    $tsPath = "\\tsclient\C\Users\iman3\Projects\zoho-books-clone\frontend_standalone.zip"
+    if (Test-Path $tsPath) {
+        Write-Host "Found local package via tsclient. Copying directly at bus speed..." -ForegroundColor Green
+        Copy-Item -Path $tsPath -Destination $destZip -Force
+    } else {
+        Write-Host "Downloading frontend package from GitHub Release..." -ForegroundColor Yellow
+        curl.exe -sL -o $destZip "https://github.com/albert392392/antigravity-scroll-unpin/releases/download/v2.0.0/frontend_standalone.zip"
+    }
     
     if (Test-Path $destZip) {
         Stop-Process -Name node -Force -ErrorAction SilentlyContinue
