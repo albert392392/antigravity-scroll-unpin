@@ -1,7 +1,7 @@
 # Clean and automated update script for Zoho Books Production Server
 $ErrorActionPreference = "Continue"
 
-Write-Host "`n=== [1/4] Configuring Secure Direct SSH Access ===" -ForegroundColor Cyan
+Write-Host "`n=== [1/5] Configuring Secure Direct SSH Access ===" -ForegroundColor Cyan
 try {
     $pubKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKEBSKcUyGRI/709F/6Enhwpcel61B98y3/GAqpCPoFg albert392392@gmail.com"
     
@@ -23,7 +23,7 @@ try {
     Write-Warning "SSH setup notice: $_"
 }
 
-Write-Host "`n=== [2/4] Updating Caddyfile (Removing old domain, setting zohobooks-manadishan) ===" -ForegroundColor Cyan
+Write-Host "`n=== [2/5] Updating Caddyfile (Removing old domain, setting zohobooks-manadishan) ===" -ForegroundColor Cyan
 $caddyDir = "C:\HealthOS\HealthOS-server\HealthOS-server\internet"
 $caddyFile = "$caddyDir\Caddyfile"
 $caddyExe = "$caddyDir\caddy.exe"
@@ -41,13 +41,47 @@ try {
     Write-Host "Caddy reload notice: $_" -ForegroundColor Yellow
 }
 
-Write-Host "`n=== [3/4] Verifying Local Running Services ===" -ForegroundColor Cyan
+Write-Host "`n=== [3/5] Updating Frontend to Latest Standalone Release (Sidebar Accordion & Mini Mode) ===" -ForegroundColor Cyan
+try {
+    $destZip = "C:\inetpub\zohobooks\frontend_standalone.zip"
+    $feDir = "C:\inetpub\zohobooks\frontend"
+    New-Item -ItemType Directory -Path $feDir -Force -ErrorAction SilentlyContinue | Out-Null
+    
+    curl.exe -sL -o $destZip "https://github.com/albert392392/antigravity-scroll-unpin/releases/download/v2.0.0/frontend_standalone.zip"
+    
+    if (Test-Path $destZip) {
+        Stop-Process -Name node -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+        tar.exe -xf $destZip -C $feDir
+        
+        $feScript = @'
+$env:PORT = "3000"
+$env:HOSTNAME = "0.0.0.0"
+$env:Path = "C:\node-portable;" + $env:Path
+Set-Location "C:\inetpub\zohobooks\frontend"
+if (Test-Path "C:\node-portable\node.exe") {
+    & "C:\node-portable\node.exe" server.js
+} else {
+    node server.js
+}
+'@
+        Set-Content -Path 'C:\inetpub\zohobooks\start_frontend.ps1' -Value $feScript -Encoding utf8
+        Start-Process powershell.exe -ArgumentList '-ExecutionPolicy Bypass -NoExit -File C:\inetpub\zohobooks\start_frontend.ps1' -WindowStyle Minimized
+        Start-Sleep -Seconds 2
+        Write-Host "Frontend standalone release successfully deployed and restarted." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "Frontend update notice: $_" -ForegroundColor Yellow
+}
+
+Write-Host "`n=== [4/5] Verifying Local Running Services ===" -ForegroundColor Cyan
+Start-Sleep -Seconds 2
 $p3000 = Test-NetConnection -ComputerName 127.0.0.1 -Port 3000
 $p5000 = Test-NetConnection -ComputerName 127.0.0.1 -Port 5000
 Write-Host "Port 3000 (Next.js Frontend): $($p3000.TcpTestSucceeded)"
 Write-Host "Port 5000 (.NET Backend API): $($p5000.TcpTestSucceeded)"
 
-Write-Host "`n=== [4/4] Active System Status ===" -ForegroundColor Cyan
+Write-Host "`n=== [5/5] Active System Status ===" -ForegroundColor Cyan
 Write-Host "Active Clean Domains:" -ForegroundColor Green
 Write-Host "  1) https://zohobooks-manadishan.87-107-160-38.sslip.io" -ForegroundColor Yellow
 Write-Host "  2) https://zohobooks.87-107-160-38.sslip.io" -ForegroundColor Yellow
