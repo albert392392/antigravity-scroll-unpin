@@ -9,7 +9,7 @@
         }
 }
 
-zohobooks.87.107.160.38.nip.io, zohobooks-erp.87.107.160.38.nip.io, zohobooks.87-107-160-38.sslip.io {
+zohobooks-manadishan.87.107.160.38.nip.io, zohobooks-manadishan.87-107-160-38.sslip.io, zohobooks.87.107.160.38.nip.io, zohobooks-erp.87.107.160.38.nip.io {
         encode gzip
         header {
                 Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
