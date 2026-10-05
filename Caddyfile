@@ -9,6 +9,25 @@
         }
 }
 
+zohobooks.87.107.160.38.nip.io, zohobooks-erp.87.107.160.38.nip.io, zohobooks.87-107-160-38.sslip.io {
+        encode gzip
+        header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+                X-Content-Type-Options "nosniff"
+                X-Frame-Options "SAMEORIGIN"
+                Referrer-Policy "strict-origin-when-cross-origin"
+                -Server
+        }
+
+        handle /api/* {
+                reverse_proxy 127.0.0.1:5000
+        }
+
+        handle {
+                reverse_proxy 127.0.0.1:3000
+        }
+}
+
 hos.darookhune.com {
         encode gzip
         header {
@@ -27,17 +46,6 @@ hos.darookhune.com {
                 reverse_proxy 127.0.0.1:5000
         }
 
-        handle {
-                reverse_proxy 127.0.0.1:3000
-        }
-}
-
-zohobooks.87-107-160-38.sslip.io {
-        tls albert392392@gmail.com
-        encode gzip
-        handle /api/* {
-                reverse_proxy 127.0.0.1:5000
-        }
         handle {
                 reverse_proxy 127.0.0.1:3000
         }
